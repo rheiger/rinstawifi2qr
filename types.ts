@@ -4,6 +4,8 @@ export enum EncryptionType {
   NONE = 'nopass'
 }
 
+export type Language = 'en' | 'de' | 'fr' | 'it' | 'es' | 'pt' | 'pl' | 'sk' | 'nl' | 'dk' | 'no' | 'se' | 'fi';
+
 export interface WifiData {
   ssid: string;
   password: string;
@@ -13,11 +15,12 @@ export interface WifiData {
 
 export interface WelcomeCardState {
   generated: boolean;
-  message: string;
+  messages: Partial<Record<Language, string>>;
   loading: boolean;
 }
 
 export interface PrintSettings {
   paperSize: 'A4' | 'Letter';
   cardsPerPage: number;
+  languages: Language[];
 }

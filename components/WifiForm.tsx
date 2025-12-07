@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { Wifi, Lock, Eye, EyeOff, ShieldCheck, Router } from 'lucide-react';
-import { EncryptionType, WifiData } from '../types';
+import { EncryptionType, WifiData, Language } from '../types';
+import { t } from '../utils/i18n';
 
 interface WifiFormProps {
   wifiData: WifiData;
   setWifiData: React.Dispatch<React.SetStateAction<WifiData>>;
+  language: Language;
 }
 
-export const WifiForm: React.FC<WifiFormProps> = ({ wifiData, setWifiData }) => {
+export const WifiForm: React.FC<WifiFormProps> = ({ wifiData, setWifiData, language }) => {
   const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (field: keyof WifiData, value: string | boolean) => {
@@ -20,13 +22,13 @@ export const WifiForm: React.FC<WifiFormProps> = ({ wifiData, setWifiData }) => 
         <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
           <Router size={24} />
         </div>
-        <h2 className="text-xl font-semibold text-slate-800">Network Details</h2>
+        <h2 className="text-xl font-semibold text-slate-800">{t(language, 'networkDetails')}</h2>
       </div>
 
       <div className="space-y-5">
         {/* SSID Input */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1.5">Network Name (SSID)</label>
+          <label className="block text-sm font-medium text-slate-700 mb-1.5">{t(language, 'ssidLabel')}</label>
           <div className="relative group">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-indigo-500 transition-colors">
               <Wifi size={18} />
@@ -35,7 +37,7 @@ export const WifiForm: React.FC<WifiFormProps> = ({ wifiData, setWifiData }) => 
               type="text"
               value={wifiData.ssid}
               onChange={(e) => handleChange('ssid', e.target.value)}
-              placeholder="e.g., MyHomeWifi"
+              placeholder={t(language, 'ssidPlaceholder') as string}
               className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none"
             />
           </div>
@@ -43,7 +45,7 @@ export const WifiForm: React.FC<WifiFormProps> = ({ wifiData, setWifiData }) => 
 
         {/* Encryption Selection */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1.5">Security Type</label>
+          <label className="block text-sm font-medium text-slate-700 mb-1.5">{t(language, 'securityLabel')}</label>
           <div className="relative group">
              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-indigo-500 transition-colors">
               <ShieldCheck size={18} />
@@ -66,7 +68,7 @@ export const WifiForm: React.FC<WifiFormProps> = ({ wifiData, setWifiData }) => 
         {/* Password Input */}
         {wifiData.encryption !== EncryptionType.NONE && (
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Password</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">{t(language, 'passwordLabel')}</label>
             <div className="relative group">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-indigo-500 transition-colors">
                 <Lock size={18} />
@@ -99,7 +101,7 @@ export const WifiForm: React.FC<WifiFormProps> = ({ wifiData, setWifiData }) => 
             className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer"
           />
           <label htmlFor="hidden-network" className="ml-2 block text-sm text-slate-600 cursor-pointer select-none">
-            Hidden Network
+            {t(language, 'hiddenLabel')}
           </label>
         </div>
       </div>

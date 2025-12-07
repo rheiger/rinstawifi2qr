@@ -1,11 +1,13 @@
 import React, { useMemo } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
-import { WifiData, WelcomeCardState, PrintSettings } from '../types';
+import { WifiData, WelcomeCardState, PrintSettings, Language } from '../types';
+import { t } from '../utils/i18n';
 
 interface PrintLayoutProps {
   wifiData: WifiData;
   cardState: WelcomeCardState;
   printSettings: PrintSettings;
+  language: Language;
 }
 
 const escapeString = (str: string) => str.replace(/([\\;,:"])/g, '\\$1');
@@ -21,16 +23,25 @@ const columnsForCount = (count: number) => {
   return 1;
 };
 
-export const PrintLayout: React.FC<PrintLayoutProps> = ({ wifiData, cardState, printSettings }) => {
+const repeatLanguages = (langs: Language[], count: number): Language[] => {
+  if (langs.length === 0) return [];
+  const res: Language[] = [];
+  for (let i = 0; i < count; i++) {
+    res.push(langs[i % langs.length]);
+  }
+  return res;
+};
+
+export const PrintLayout: React.FC<PrintLayoutProps> = ({ wifiData, cardState, printSettings, language }) => {
   const isReady = wifiData.ssid.length > 0 && (wifiData.encryption === 'nopass' || wifiData.password.length > 0);
   const qrValue = useMemo(() => qrValueFromWifi(wifiData), [wifiData]);
-  const cards = Array.from({ length: printSettings.cardsPerPage }, (_, idx) => idx);
+  const cards = repeatLanguages(printSettings.languages, printSettings.cardsPerPage);
   const columns = columnsForCount(printSettings.cardsPerPage);
 
   if (!isReady) {
     return (
       <div className="hidden print-only p-10 text-center">
-        <p className="text-lg">Add network details and regenerate the QR code before printing.</p>
+        <p className="text-lg">{t(language, 'enterDetails')}</p>
       </div>
     );
   }
@@ -41,15 +52,17 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({ wifiData, cardState, p
         className="grid gap-6"
         style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
       >
-        {cards.map((idx) => (
+        {cards.map((langCode, idx) => {
+          const msg = cardState.messages[langCode] || cardState.messages.en || Object.values(cardState.messages)[0];
+          return (
           <div
             key={idx}
             className="border-2 border-slate-900 rounded-2xl p-4 flex flex-col items-center justify-between h-full"
           >
             <div className="text-center mb-4">
-              <h1 className="text-xl font-bold mb-1">Wi-Fi Network</h1>
+              <h1 className="text-xl font-bold mb-1">Wi-Fi</h1>
               <p className="text-sm text-slate-700 italic">
-                {cardState.generated ? cardState.message : 'Scan to connect'}
+                {cardState.generated && msg ? msg : t(language, 'welcomePlaceholder')}
               </p>
             </div>
 
@@ -63,16 +76,16 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({ wifiData, cardState, p
             </div>
 
             <div className="w-full border-t border-slate-300 pt-3 text-left">
-              <p className="text-sm font-mono mb-1"><strong>Network:</strong> {wifiData.ssid}</p>
+              <p className="text-sm font-mono mb-1"><strong>{t(language, 'ssidLabel')}:</strong> {wifiData.ssid}</p>
               {wifiData.encryption !== 'nopass' && (
-                <p className="text-sm font-mono"><strong>Password:</strong> {wifiData.password}</p>
+                <p className="text-sm font-mono"><strong>{t(language, 'passwordShown')}:</strong> {wifiData.password}</p>
               )}
               {wifiData.hidden && (
-                <p className="text-xs text-slate-500 mt-1">Hidden network</p>
+                <p className="text-xs text-slate-500 mt-1">{t(language, 'hiddenNetwork')}</p>
               )}
             </div>
           </div>
-        ))}
+        )})}
       </div>
     </div>
   );

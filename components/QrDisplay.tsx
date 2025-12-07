@@ -1,7 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { Download, Printer, Share2, Sparkles, AlertCircle } from 'lucide-react';
-import { WifiData, WelcomeCardState, PrintSettings } from '../types';
+import { WifiData, WelcomeCardState, PrintSettings, Language } from '../types';
+import { t, languageOptions } from '../utils/i18n';
 
 interface QrDisplayProps {
   wifiData: WifiData;
@@ -9,9 +10,10 @@ interface QrDisplayProps {
   onGenerateCard: () => void;
   printSettings: PrintSettings;
   setPrintSettings: React.Dispatch<React.SetStateAction<PrintSettings>>;
+  language: Language;
 }
 
-export const QrDisplay: React.FC<QrDisplayProps> = ({ wifiData, cardState, onGenerateCard, printSettings, setPrintSettings }) => {
+export const QrDisplay: React.FC<QrDisplayProps> = ({ wifiData, cardState, onGenerateCard, printSettings, setPrintSettings, language }) => {
   const qrRef = useRef<HTMLDivElement>(null);
 
   // QR Format: WIFI:T:WPA;S:mynetwork;P:mypass;;
@@ -53,6 +55,10 @@ export const QrDisplay: React.FC<QrDisplayProps> = ({ wifiData, cardState, onGen
   };
 
   const isReady = wifiData.ssid.length > 0 && (wifiData.encryption === 'nopass' || wifiData.password.length > 0);
+  const currentMessage =
+    cardState.messages[language] ||
+    cardState.messages.en ||
+    Object.values(cardState.messages)[0];
 
   return (
     <div className="flex flex-col gap-6">
@@ -65,7 +71,7 @@ export const QrDisplay: React.FC<QrDisplayProps> = ({ wifiData, cardState, onGen
              <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
                <AlertCircle size={32} />
              </div>
-             <p className="text-lg">Enter network details to generate QR code</p>
+             <p className="text-lg">{t(language, 'enterDetails')}</p>
           </div>
         ) : (
           <div className="p-8 flex flex-col items-center">
@@ -102,7 +108,7 @@ export const QrDisplay: React.FC<QrDisplayProps> = ({ wifiData, cardState, onGen
               <div className="flex justify-between items-start mb-2">
                  <div className="flex items-center gap-2 text-indigo-900 font-semibold text-sm">
                    <Sparkles size={16} className="text-indigo-500" />
-                   Welcome Card
+                   {t(language, 'welcomeCard')}
                  </div>
               </div>
               
@@ -115,7 +121,7 @@ export const QrDisplay: React.FC<QrDisplayProps> = ({ wifiData, cardState, onGen
                 </div>
               ) : (
                 <p className="text-slate-700 italic text-sm mb-3">
-                  "{cardState.generated ? cardState.message : 'Generate a unique welcome message for your guests...'}"
+                  "{cardState.generated && currentMessage ? currentMessage : t(language, 'welcomePlaceholder')}"
                 </p>
               )}
               
@@ -124,7 +130,7 @@ export const QrDisplay: React.FC<QrDisplayProps> = ({ wifiData, cardState, onGen
                   onClick={onGenerateCard}
                   className="text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 rounded-md transition-colors w-full"
                  >
-                   Generate Welcome Message
+                   {t(language, 'generate')}
                  </button>
               )}
             </div>
@@ -135,20 +141,20 @@ export const QrDisplay: React.FC<QrDisplayProps> = ({ wifiData, cardState, onGen
                 className="flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-colors font-medium text-sm"
               >
                 <Download size={18} />
-                Save Image
+                {t(language, 'saveImage')}
               </button>
               <button
                 onClick={handlePrint}
                 className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 transition-colors font-medium text-sm shadow-sm"
               >
                 <Printer size={18} />
-                Print Card
+                {t(language, 'printCard')}
               </button>
             </div>
 
             <div className="w-full mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
               <div className="flex flex-col gap-1">
-                <label className="text-slate-700 font-medium">Paper size</label>
+                <label className="text-slate-700 font-medium">{t(language, 'paperSize')}</label>
                 <select
                   value={printSettings.paperSize}
                   onChange={(e) => setPrintSettings(prev => ({ ...prev, paperSize: e.target.value as PrintSettings['paperSize'] }))}
@@ -159,7 +165,7 @@ export const QrDisplay: React.FC<QrDisplayProps> = ({ wifiData, cardState, onGen
                 </select>
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-slate-700 font-medium">Cards per page</label>
+                <label className="text-slate-700 font-medium">{t(language, 'cardsPerPage')}</label>
                 <select
                   value={printSettings.cardsPerPage}
                   onChange={(e) => setPrintSettings(prev => ({ ...prev, cardsPerPage: Number(e.target.value) }))}
@@ -169,6 +175,37 @@ export const QrDisplay: React.FC<QrDisplayProps> = ({ wifiData, cardState, onGen
                     <option key={count} value={count}>{count}</option>
                   ))}
                 </select>
+              </div>
+              <div className="sm:col-span-2 flex flex-col gap-1">
+                <label className="text-slate-700 font-medium">{t(language, 'languagesLabel')}</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {languageOptions.map((opt) => {
+                    const selected = printSettings.languages.includes(opt.code);
+                    return (
+                      <button
+                        key={opt.code}
+                        type="button"
+                        onClick={() => {
+                          setPrintSettings(prev => {
+                            let next = prev.languages.includes(opt.code)
+                              ? prev.languages.filter(l => l !== opt.code)
+                              : [...prev.languages, opt.code];
+                            if (next.length > 4) next = next.slice(0,4);
+                            if (next.length === 0) next = [language];
+                            return { ...prev, languages: next };
+                          });
+                        }}
+                        className={`flex items-center justify-between px-3 py-2 border rounded-lg text-sm ${selected ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 bg-white'}`}
+                      >
+                        <span className="flex items-center gap-2">
+                          <span>{opt.flag}</span>
+                          <span>{opt.label}</span>
+                        </span>
+                        {selected && <span className="text-indigo-600">✓</span>}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
