@@ -11,12 +11,18 @@
       body {
         font-family: 'Inter', sans-serif;
       }
+      .print-only {
+        display: none;
+      }
+      .print-hide {
+        display: block;
+      }
       @media print {
-        .no-print {
-          display: none !important;
-        }
         .print-only {
           display: block !important;
+        }
+        .print-hide {
+          display: none !important;
         }
         body {
           background: white;

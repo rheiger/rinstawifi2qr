@@ -1,15 +1,17 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { Download, Printer, Share2, Sparkles, AlertCircle } from 'lucide-react';
-import { WifiData, WelcomeCardState } from '../types';
+import { WifiData, WelcomeCardState, PrintSettings } from '../types';
 
 interface QrDisplayProps {
   wifiData: WifiData;
   cardState: WelcomeCardState;
   onGenerateCard: () => void;
+  printSettings: PrintSettings;
+  setPrintSettings: React.Dispatch<React.SetStateAction<PrintSettings>>;
 }
 
-export const QrDisplay: React.FC<QrDisplayProps> = ({ wifiData, cardState, onGenerateCard }) => {
+export const QrDisplay: React.FC<QrDisplayProps> = ({ wifiData, cardState, onGenerateCard, printSettings, setPrintSettings }) => {
   const qrRef = useRef<HTMLDivElement>(null);
 
   // QR Format: WIFI:T:WPA;S:mynetwork;P:mypass;;
@@ -22,6 +24,20 @@ export const QrDisplay: React.FC<QrDisplayProps> = ({ wifiData, cardState, onGen
   const handlePrint = () => {
     window.print();
   };
+
+  useEffect(() => {
+    const styleId = 'print-page-style';
+    let styleEl = document.getElementById(styleId) as HTMLStyleElement | null;
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = styleId;
+      document.head.appendChild(styleEl);
+    }
+    styleEl.textContent = `@page { size: ${printSettings.paperSize}; margin: 12mm; }`;
+    return () => {
+      styleEl?.parentNode?.removeChild(styleEl);
+    };
+  }, [printSettings.paperSize]);
 
   const handleDownload = () => {
     const canvas = qrRef.current?.querySelector('canvas');
@@ -40,30 +56,6 @@ export const QrDisplay: React.FC<QrDisplayProps> = ({ wifiData, cardState, onGen
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Print View Only - Hidden on Screen */}
-      <div className="hidden print-only fixed inset-0 bg-white z-[9999] p-10">
-         <div className="border-4 border-black p-8 max-w-2xl mx-auto rounded-3xl text-center">
-            <h1 className="text-4xl font-bold mb-4">Wi-Fi Network</h1>
-            <p className="text-2xl mb-8">{cardState.generated ? cardState.message : 'Scan to connect'}</p>
-            
-            <div className="flex justify-center mb-8">
-              <QRCodeCanvas
-                value={qrValue}
-                size={400}
-                level="Q"
-                includeMargin={true}
-              />
-            </div>
-
-            <div className="text-left inline-block border-t-2 border-black pt-6 px-8">
-               <p className="text-2xl font-mono mb-2"><strong>Network:</strong> {wifiData.ssid}</p>
-               {wifiData.encryption !== 'nopass' && (
-                 <p className="text-2xl font-mono"><strong>Password:</strong> {wifiData.password}</p>
-               )}
-            </div>
-         </div>
-      </div>
-
       {/* Screen View */}
       <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 overflow-hidden border border-slate-100">
         <div className="p-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
@@ -152,6 +144,32 @@ export const QrDisplay: React.FC<QrDisplayProps> = ({ wifiData, cardState, onGen
                 <Printer size={18} />
                 Print Card
               </button>
+            </div>
+
+            <div className="w-full mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+              <div className="flex flex-col gap-1">
+                <label className="text-slate-700 font-medium">Paper size</label>
+                <select
+                  value={printSettings.paperSize}
+                  onChange={(e) => setPrintSettings(prev => ({ ...prev, paperSize: e.target.value as PrintSettings['paperSize'] }))}
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
+                >
+                  <option value="A4">A4</option>
+                  <option value="Letter">Letter</option>
+                </select>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-slate-700 font-medium">Cards per page</label>
+                <select
+                  value={printSettings.cardsPerPage}
+                  onChange={(e) => setPrintSettings(prev => ({ ...prev, cardsPerPage: Number(e.target.value) }))}
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
+                >
+                  {[1,2,4,6,8,9,12].map(count => (
+                    <option key={count} value={count}>{count}</option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
         )}

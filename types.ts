@@ -16,3 +16,8 @@ export interface WelcomeCardState {
   message: string;
   loading: boolean;
 }
+
+export interface PrintSettings {
+  paperSize: 'A4' | 'Letter';
+  cardsPerPage: number;
+}
