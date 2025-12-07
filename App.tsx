@@ -26,6 +26,7 @@ const App: React.FC = () => {
     paperSize: 'A4',
     cardsPerPage: 4,
     languages: [detectLanguage()],
+    languageMode: 'perCard',
   });
 
   const [uiLanguage, setUiLanguage] = useState<Language>(detectLanguage());
@@ -46,6 +47,16 @@ const App: React.FC = () => {
       return { ...prev, languages: next };
     });
   }, [uiLanguage]);
+
+  // Ensure enough cards when using per-card distribution
+  useEffect(() => {
+    setPrintSettings(prev => {
+      if (prev.languageMode === 'perCard' && prev.cardsPerPage < prev.languages.length) {
+        return { ...prev, cardsPerPage: prev.languages.length };
+      }
+      return prev;
+    });
+  }, [printSettings.languageMode, printSettings.languages]);
 
   const handleGenerateCard = async () => {
     if (!wifiData.ssid) return;

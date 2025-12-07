@@ -80,3 +80,10 @@ export const phrasesByLanguage: Record<Language, string[]> = {
     'Hyppää {ssid}:iin ja nauti wifistä.',
   ],
 };
+
+export const getRandomPhrase = (lang: Language, ssid: string) => {
+  const phrases = phrasesByLanguage[lang] || phrasesByLanguage.en;
+  if (!phrases || phrases.length === 0) return 'Welcome!';
+  const idx = Math.floor(Math.random() * phrases.length);
+  return phrases[idx].replace('{ssid}', ssid || 'Wi-Fi');
+};

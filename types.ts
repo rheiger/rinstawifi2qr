@@ -23,4 +23,5 @@ export interface PrintSettings {
   paperSize: 'A4' | 'Letter';
   cardsPerPage: number;
   languages: Language[];
+  languageMode: 'all' | 'perCard';
 }

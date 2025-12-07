@@ -177,6 +177,20 @@ export const QrDisplay: React.FC<QrDisplayProps> = ({ wifiData, cardState, onGen
                 </select>
               </div>
               <div className="sm:col-span-2 flex flex-col gap-1">
+                <label className="text-slate-700 font-medium">{t(language, 'languageMode')}</label>
+                <select
+                  value={printSettings.languageMode}
+                  onChange={(e) => setPrintSettings(prev => ({ ...prev, languageMode: e.target.value as PrintSettings['languageMode'] }))}
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
+                >
+                  <option value="all">{t(language, 'languageModeAll')}</option>
+                  <option value="perCard">{t(language, 'languageModePerCard')}</option>
+                </select>
+                {printSettings.languageMode === 'perCard' && printSettings.languages.length > printSettings.cardsPerPage && (
+                  <p className="text-xs text-amber-600 mt-1">Increase cards per page to at least {printSettings.languages.length}.</p>
+                )}
+              </div>
+              <div className="sm:col-span-2 flex flex-col gap-1">
                 <label className="text-slate-700 font-medium">{t(language, 'languagesLabel')}</label>
                 <div className="grid grid-cols-2 gap-2">
                   {languageOptions.map((opt) => {

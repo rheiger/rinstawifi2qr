@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { WifiData, WelcomeCardState, PrintSettings, Language } from '../types';
 import { t } from '../utils/i18n';
+import { getRandomPhrase } from '../utils/phrases';
 
 interface PrintLayoutProps {
   wifiData: WifiData;
@@ -23,19 +24,14 @@ const columnsForCount = (count: number) => {
   return 1;
 };
 
-const repeatLanguages = (langs: Language[], count: number): Language[] => {
-  if (langs.length === 0) return [];
-  const res: Language[] = [];
-  for (let i = 0; i < count; i++) {
-    res.push(langs[i % langs.length]);
-  }
-  return res;
-};
-
 export const PrintLayout: React.FC<PrintLayoutProps> = ({ wifiData, cardState, printSettings, language }) => {
   const isReady = wifiData.ssid.length > 0 && (wifiData.encryption === 'nopass' || wifiData.password.length > 0);
   const qrValue = useMemo(() => qrValueFromWifi(wifiData), [wifiData]);
-  const cards = repeatLanguages(printSettings.languages, printSettings.cardsPerPage);
+  const languages = printSettings.languages.length ? printSettings.languages : [language];
+  const cards =
+    printSettings.languageMode === 'perCard'
+      ? Array.from({ length: printSettings.cardsPerPage }, (_, idx) => languages[idx % languages.length])
+      : Array.from({ length: printSettings.cardsPerPage }, () => 'all');
   const columns = columnsForCount(printSettings.cardsPerPage);
 
   if (!isReady) {
@@ -53,7 +49,8 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({ wifiData, cardState, p
         style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
       >
         {cards.map((langCode, idx) => {
-          const msg = cardState.messages[langCode] || cardState.messages.en || Object.values(cardState.messages)[0];
+          const isAll = langCode === 'all';
+          const perCardLangs = isAll ? languages : [langCode as Language];
           return (
           <div
             key={idx}
@@ -61,9 +58,20 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({ wifiData, cardState, p
           >
             <div className="text-center mb-4">
               <h1 className="text-xl font-bold mb-1">Wi-Fi</h1>
-              <p className="text-sm text-slate-700 italic">
-                {cardState.generated && msg ? msg : t(language, 'welcomePlaceholder')}
-              </p>
+              <div className="space-y-1">
+                {perCardLangs.map((langItem) => {
+                  const msg =
+                    getRandomPhrase(langItem as Language, wifiData.ssid) ||
+                    cardState.messages[langItem as Language] ||
+                    cardState.messages.en ||
+                    t(language, 'welcomePlaceholder');
+                  return (
+                    <p key={langItem} className="text-sm text-slate-700 italic">
+                      {msg}
+                    </p>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="flex justify-center mb-4">
@@ -72,6 +80,14 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({ wifiData, cardState, p
                 size={160}
                 level="Q"
                 includeMargin={true}
+                imageSettings={{
+                  src: "https://cdn-icons-png.flaticon.com/512/93/93158.png",
+                  x: undefined,
+                  y: undefined,
+                  height: 30,
+                  width: 30,
+                  excavate: true,
+                }}
               />
             </div>
 
