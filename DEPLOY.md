@@ -10,7 +10,7 @@ This app is a static Vite build served by Nginx and fronted by Traefik. No exter
 
 ## Configuration
 
-Environment examples are in `env.prod.example` and `env.test.example`. Copy and adjust one of them, setting at least:
+Environment examples are in `env.example`. Copy to `.env` and adjust, setting at least:
 
 ```
 COMPOSE_PROJECT_NAME=rinstawifi2qr
@@ -45,7 +45,7 @@ Traefik labels are included in `docker-compose.yml` to route traffic:
 
 ## Health and maintenance
 
-- Health check: `curl http://localhost:3000/health` (or via Traefik host) returns `ok`.
+- Health check: `curl http://localhost:${LOCAL_PORT:-3000}/health` (or via Traefik host) returns `ok`.
 - Stop/remove: `docker-compose down`
 - Rebuild after code changes: `docker-compose --env-file env.prod.example up -d --build`
 
