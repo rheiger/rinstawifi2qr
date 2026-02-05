@@ -1,20 +1,17 @@
 import React, { useMemo } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
-import { WifiData, WelcomeCardState, PrintSettings, Language } from '../types';
+import { WifiData, WelcomeCardState, PrintSettings, Language, CustomMessages } from '../types';
 import { t } from '../utils/i18n';
 import { getRandomPhrase } from '../utils/phrases';
+import { buildWifiQrValue } from '../utils/qr';
 
 interface PrintLayoutProps {
   wifiData: WifiData;
   cardState: WelcomeCardState;
   printSettings: PrintSettings;
   language: Language;
+  customMessages: CustomMessages;
 }
-
-const escapeString = (str: string) => str.replace(/([\\;,:"])/g, '\\$1');
-
-const qrValueFromWifi = (wifiData: WifiData) =>
-  `WIFI:T:${wifiData.encryption};S:${escapeString(wifiData.ssid)};P:${escapeString(wifiData.password)};H:${wifiData.hidden};;`;
 
 const columnsForCount = (count: number) => {
   if (count >= 10) return 4;
@@ -24,9 +21,9 @@ const columnsForCount = (count: number) => {
   return 1;
 };
 
-export const PrintLayout: React.FC<PrintLayoutProps> = ({ wifiData, cardState, printSettings, language }) => {
+export const PrintLayout: React.FC<PrintLayoutProps> = ({ wifiData, cardState, printSettings, language, customMessages }) => {
   const isReady = wifiData.ssid.length > 0 && (wifiData.encryption === 'nopass' || wifiData.password.length > 0);
-  const qrValue = useMemo(() => qrValueFromWifi(wifiData), [wifiData]);
+  const qrValue = useMemo(() => buildWifiQrValue(wifiData), [wifiData]);
   const languages = printSettings.languages.length ? printSettings.languages : [language];
   const cards =
     printSettings.languageMode === 'perCard'
@@ -60,7 +57,9 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({ wifiData, cardState, p
               <h1 className="text-xl font-bold mb-1">Wi-Fi</h1>
               <div className="space-y-1">
                 {perCardLangs.map((langItem) => {
+                  const custom = customMessages[langItem as Language];
                   const msg =
+                    (custom && custom.trim().length > 0 ? custom : undefined) ||
                     getRandomPhrase(langItem as Language, wifiData.ssid) ||
                     cardState.messages[langItem as Language] ||
                     cardState.messages.en ||

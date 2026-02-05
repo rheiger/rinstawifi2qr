@@ -19,6 +19,8 @@ export interface WelcomeCardState {
   loading: boolean;
 }
 
+export type CustomMessages = Partial<Record<Language, string>>;
+
 export interface PrintSettings {
   paperSize: 'A4' | 'Letter';
   cardsPerPage: number;

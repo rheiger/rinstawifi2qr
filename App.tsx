@@ -3,10 +3,12 @@ import { Wifi, Grip, Sparkles } from 'lucide-react';
 import { WifiForm } from './components/WifiForm';
 import { QrDisplay } from './components/QrDisplay';
 import { PrintLayout } from './components/PrintLayout';
-import { WifiData, EncryptionType, WelcomeCardState, Language } from './types';
+import { WifiData, EncryptionType, WelcomeCardState, Language, CustomMessages } from './types';
 import { generateWelcomeMessage } from './services/geminiService';
 import { PrintSettings } from './types';
 import { detectLanguage, languageOptions, t } from './utils/i18n';
+
+const APP_VERSION = 'V1.0.1';
 
 const App: React.FC = () => {
   const [wifiData, setWifiData] = useState<WifiData>({
@@ -22,6 +24,8 @@ const App: React.FC = () => {
     loading: false,
   });
 
+  const [customMessages, setCustomMessages] = useState<CustomMessages>({});
+
   const [printSettings, setPrintSettings] = useState<PrintSettings>({
     paperSize: 'A4',
     cardsPerPage: 4,
@@ -30,6 +34,7 @@ const App: React.FC = () => {
   });
 
   const [uiLanguage, setUiLanguage] = useState<Language>(detectLanguage());
+  const [showAbout, setShowAbout] = useState(false);
 
   // Reset card state when SSID changes significantly to encourage re-generation
   useEffect(() => {
@@ -67,7 +72,9 @@ const App: React.FC = () => {
     const entries = await Promise.all(
       languagesToGenerate.map(async (lang) => ({
         lang,
-        message: await generateWelcomeMessage(wifiData.ssid, lang),
+        message: customMessages[lang] && customMessages[lang]!.trim().length > 0
+          ? customMessages[lang]!
+          : await generateWelcomeMessage(wifiData.ssid, lang),
       }))
     );
     const messageMap: WelcomeCardState['messages'] = {};
@@ -81,6 +88,17 @@ const App: React.FC = () => {
       messages: messageMap,
     });
   };
+
+  const isReady = wifiData.ssid.length > 0 && (wifiData.encryption === 'nopass' || wifiData.password.length > 0);
+
+  useEffect(() => {
+    if (!isReady || cardState.loading) return;
+    const langs = printSettings.languages.length ? printSettings.languages : [uiLanguage];
+    const missing = langs.filter(l => !customMessages[l] && !cardState.messages[l]);
+    if (missing.length === 0) return;
+    handleGenerateCard();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isReady, wifiData.ssid, printSettings.languages]);
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
@@ -103,6 +121,7 @@ const App: React.FC = () => {
               <span>Offline welcome generator</span>
             </div>
             <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-500">{APP_VERSION}</span>
               <select
                 value={uiLanguage}
                 onChange={(e) => setUiLanguage(e.target.value as Language)}
@@ -131,6 +150,11 @@ const App: React.FC = () => {
                     {t(uiLanguage, 'heroSubtitle')}
                   </p>
                 </div>
+
+                <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-xl p-4 text-sm">
+                  <div className="font-semibold">{t(uiLanguage, 'apologyTitle')}</div>
+                  <div>{t(uiLanguage, 'apologyBody')}</div>
+                </div>
                 
                 <WifiForm wifiData={wifiData} setWifiData={setWifiData} language={uiLanguage} />
                 
@@ -158,6 +182,8 @@ const App: React.FC = () => {
                     printSettings={printSettings}
                     setPrintSettings={setPrintSettings}
                     language={uiLanguage}
+                    customMessages={customMessages}
+                    setCustomMessages={setCustomMessages}
                   />
                 </div>
               </div>
@@ -178,10 +204,50 @@ const App: React.FC = () => {
                 Richie
               </a>
             </p>
+            <button
+              onClick={() => setShowAbout(true)}
+              className="text-sm text-indigo-600 hover:text-indigo-800 underline decoration-indigo-200 underline-offset-2 hover:decoration-indigo-600"
+            >
+              {t(uiLanguage, 'about')}
+            </button>
           </div>
         </footer>
       </div>
-      <PrintLayout wifiData={wifiData} cardState={cardState} printSettings={printSettings} language={uiLanguage} />
+      <PrintLayout
+        wifiData={wifiData}
+        cardState={cardState}
+        printSettings={printSettings}
+        language={uiLanguage}
+        customMessages={customMessages}
+      />
+
+      {showAbout && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-slate-900">{t(uiLanguage, 'aboutTitle')}</h2>
+                <p className="text-sm text-slate-600 mt-1">{t(uiLanguage, 'aboutBody')}</p>
+              </div>
+              <button
+                onClick={() => setShowAbout(false)}
+                className="text-slate-500 hover:text-slate-700"
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="mt-4 border-t border-slate-200 pt-4">
+              <div className="text-sm font-semibold text-slate-800">{t(uiLanguage, 'revisionHistory')}</div>
+              <div className="mt-2 text-sm text-slate-700 space-y-1">
+                <div><strong>V1.0.1</strong> – Fix Wi‑Fi QR encoding order/compatibility. Add multilingual UI, print options, and message overrides.</div>
+                <div><strong>V1.0.0</strong> – Initial release.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

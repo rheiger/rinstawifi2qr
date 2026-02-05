@@ -1,8 +1,9 @@
 import React, { useEffect, useRef } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { Download, Printer, Share2, Sparkles, AlertCircle } from 'lucide-react';
-import { WifiData, WelcomeCardState, PrintSettings, Language } from '../types';
+import { WifiData, WelcomeCardState, PrintSettings, Language, CustomMessages } from '../types';
 import { t, languageOptions } from '../utils/i18n';
+import { buildWifiQrValue } from '../utils/qr';
 
 interface QrDisplayProps {
   wifiData: WifiData;
@@ -11,17 +12,23 @@ interface QrDisplayProps {
   printSettings: PrintSettings;
   setPrintSettings: React.Dispatch<React.SetStateAction<PrintSettings>>;
   language: Language;
+  customMessages: CustomMessages;
+  setCustomMessages: React.Dispatch<React.SetStateAction<CustomMessages>>;
 }
 
-export const QrDisplay: React.FC<QrDisplayProps> = ({ wifiData, cardState, onGenerateCard, printSettings, setPrintSettings, language }) => {
+export const QrDisplay: React.FC<QrDisplayProps> = ({
+  wifiData,
+  cardState,
+  onGenerateCard,
+  printSettings,
+  setPrintSettings,
+  language,
+  customMessages,
+  setCustomMessages,
+}) => {
   const qrRef = useRef<HTMLDivElement>(null);
 
-  // QR Format: WIFI:T:WPA;S:mynetwork;P:mypass;;
-  const escapeString = (str: string) => {
-    return str.replace(/([\\;,:"])/g, '\\$1');
-  };
-
-  const qrValue = `WIFI:T:${wifiData.encryption};S:${escapeString(wifiData.ssid)};P:${escapeString(wifiData.password)};H:${wifiData.hidden};;`;
+  const qrValue = buildWifiQrValue(wifiData);
 
   const handlePrint = () => {
     window.print();
@@ -56,6 +63,7 @@ export const QrDisplay: React.FC<QrDisplayProps> = ({ wifiData, cardState, onGen
 
   const isReady = wifiData.ssid.length > 0 && (wifiData.encryption === 'nopass' || wifiData.password.length > 0);
   const currentMessage =
+    customMessages[language] ||
     cardState.messages[language] ||
     cardState.messages.en ||
     Object.values(cardState.messages)[0];
@@ -152,6 +160,27 @@ export const QrDisplay: React.FC<QrDisplayProps> = ({ wifiData, cardState, onGen
               </button>
             </div>
 
+            <div className="w-full mt-3">
+              <details className="text-xs text-slate-600">
+                <summary className="cursor-pointer select-none">Show raw QR content</summary>
+                <div className="mt-2 flex items-start gap-2">
+                  <code className="block w-full bg-slate-50 border border-slate-200 rounded-lg p-2 break-all">
+                    {qrValue}
+                  </code>
+                  <button
+                    type="button"
+                    onClick={() => navigator.clipboard.writeText(qrValue)}
+                    className="px-2 py-1 border border-slate-200 rounded-md text-xs bg-white hover:bg-slate-50"
+                  >
+                    Copy
+                  </button>
+                </div>
+                <div className="mt-2 text-slate-500">
+                  <strong>{t(language, 'qrNoteTitle')}:</strong> {t(language, 'qrNoteBody')}
+                </div>
+              </details>
+            </div>
+
             <div className="w-full mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
               <div className="flex flex-col gap-1">
                 <label className="text-slate-700 font-medium">{t(language, 'paperSize')}</label>
@@ -220,6 +249,20 @@ export const QrDisplay: React.FC<QrDisplayProps> = ({ wifiData, cardState, onGen
                     );
                   })}
                 </div>
+              </div>
+              <div className="sm:col-span-2 flex flex-col gap-2">
+                {printSettings.languages.map((langCode) => (
+                  <div key={langCode} className="flex flex-col gap-1">
+                    <label className="text-xs text-slate-600">{languageOptions.find(l => l.code === langCode)?.flag} {languageOptions.find(l => l.code === langCode)?.label}</label>
+                    <input
+                      type="text"
+                      value={customMessages[langCode] ?? ''}
+                      onChange={(e) => setCustomMessages(prev => ({ ...prev, [langCode]: e.target.value }))}
+                      placeholder={cardState.messages[langCode] || t(language, 'welcomePlaceholder') as string}
+                      className="w-full border border-slate-200 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-sm"
+                    />
+                  </div>
+                ))}
               </div>
             </div>
           </div>
